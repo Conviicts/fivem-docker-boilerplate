@@ -1,0 +1,55 @@
+version: '3.9'
+services:
+    fivem:
+        build: requirements/fivem
+        container_name: fivem
+        stdin_open: true
+        tty: true
+        volumes:
+            - ./fivem/server.cfg:/srv/server.cfg
+            - ./fivem/resources:/srv/resources
+            - ./fivem/cache:/srv/cache
+        ports:
+            - "40120:40120/tcp"
+            - "30120:30120/tcp"
+            - "30120:30120/udp"
+    db:
+        image: mysql:5.7
+        container_name: mysql
+        ports:
+            - 3306:3306
+        volumes:
+            - ./config/mysql:/etc/mysql/conf.d:ro
+            - ./data/mysql:/data
+        environment:
+            - MYSQL_ROOT_PASSWORD=password
+    nginx:
+        image: nginx:stable
+        container_name: nginx
+        volumes:
+            - ./logs/nginx/:/var/log/nginx
+            - ./config/nginx/:/etc/nginx/conf.d
+            - ./www:/var/www/app/
+        links:
+            - php:fpm
+        ports:
+            - 80:80
+    php:
+        build: requirements/php
+        container_name: php
+        links:
+            - db:webstack_mysql
+        volumes:
+            - ./logs/app:/var/www/app/var/logs
+            - ./config/php:/usr/local/etc/php/conf.d
+            - ./www:/var/www/app/
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: phpmyadmin
+        links:
+            - db:db
+        ports:
+            - 8080:80
+        environment:
+            PMA_USER : root
+            PMA_PASSWORD : password
